@@ -46,7 +46,7 @@ class Usage(Exception):
 
 
 class DeletedTweetsWorker(object):
-    def init(self, heart, images):
+    def __init__(self, heart, images):
         self.heart = heart
         self.images = images
         self.get_config()
@@ -103,7 +103,7 @@ class DeletedTweetsWorker(object):
         return ids, politicians
 
     def run(self):
-        minetypes.init()
+        #minetypes.init()
         self.init_database()
         self.init_beanstalk()
         self.users, self.politicians = self.get_users()
@@ -123,6 +123,7 @@ class DeletedTweetsWorker(object):
         if feed.has_key('delete'):
             #if delete feed's user_id in self.users.keys():
             #    self.handle_deletion(feed)
+            pass
         else:
             if feed['from']['id'] in self.users.keys():
                 self.handle_new(feed)
@@ -133,21 +134,21 @@ class DeletedTweetsWorker(object):
             #        self.beanstalk.put(anyjson.serialize(tweet))
 
     def handle_deletion(self, tweet):
-        """
-        log.notice("Deleted tweet {0}", tweet['delete']['status']['id'])
-        cursor = self.database.cursor()
-        cursor.execute("""SELECT COUNT(*) FROM `tweets` WHERE `id` = %s""", (tweet['delete']['status']['id'],))
-        num_previous = cursor.fetchone()[0]
-        if num_previous > 0:
-            cursor.execute("""UPDATE `tweets` SET `modified` = NOW(), `deleted` = 1 WHERE id = %s""", (tweet['delete']['status']['id'],))
-        else:
-            cursor.execute("""REPLACE INTO `tweets` (`id`, `deleted`, `modified`, `created`) VALUES(%s, 1, NOW(), NOW())""", (tweet['delete']['status']['id']))
-        self.copy_tweet_to_deleted_table(tweet['delete']['status']['id'])
+        
+        #log.notice("Deleted tweet {0}", tweet['delete']['status']['id'])
+        #cursor = self.database.cursor()
+        #cursor.execute("""SELECT COUNT(*) FROM `tweets` WHERE `id` = %s""", (tweet['delete']['status']['id'],))
+        #num_previous = cursor.fetchone()[0]
+        #if num_previous > 0:
+        #    cursor.execute("""UPDATE `tweets` SET `modified` = NOW(), `deleted` = 1 WHERE id = %s""", (tweet['delete']['status']['id'],))
+        #else:
+        #    cursor.execute("""REPLACE INTO `tweets` (`id`, `deleted`, `modified`, `created`) VALUES(%s, 1, NOW(), NOW())""", (tweet['delete']['status']['id']))
+        #self.copy_tweet_to_deleted_table(tweet['delete']['status']['id'])
 
-        cursor.execute("""SELECT * FROM `tweets` WHERE `id` = %s""", (tweet['delete']['status']['id'],))
-        ref_tweet = cursor.fetchone()
-        self.send_alert(ref_tweet[1], ref_tweet[4], ref_tweet[2])
-        """
+        #cursor.execute("""SELECT * FROM `tweets` WHERE `id` = %s""", (tweet['delete']['status']['id'],))
+        #ref_tweet = cursor.fetchone()
+        #self.send_alert(ref_tweet[1], ref_tweet[4], ref_tweet[2])
+        pass
 
     def handle_new(self, feed):
         log.notice("New feed {feed} from user {user_id}/{screen_name}",
