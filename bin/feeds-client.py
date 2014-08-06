@@ -73,6 +73,7 @@ class FeedListener(streaming.StreamListener):
             #feed = anyjson.deserialize(data)
             if feed.has_key('from'):
                 log.notice( u'Queued feed for user {0} / {1}'.format(dict_mget(feed,['from','id']), dict_mget(feed,['from','name'])) )
+                self.queue.put(anyjson.serialize(feed))
             """                
             tweet = anyjson.deserialize(data)
             self.queue.put(anyjson.serialize(tweet))

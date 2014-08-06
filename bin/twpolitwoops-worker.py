@@ -119,6 +119,8 @@ class DeletedTweetsWorker(object):
                 job.delete()
 
     def handle_feed(self, job_body):
+        log.notice(u'handle_feed.')
+        """
         feed = anyjson.deserialize(job_body)
         if feed.has_key('delete'):
             #if delete feed's user_id in self.users.keys():
@@ -132,6 +134,7 @@ class DeletedTweetsWorker(object):
             #        # Queue the tweet for screenshots and/or image mirroring
             #        log.notice("Queued tweet {0} for entity archiving.", tweet['id'])
             #        self.beanstalk.put(anyjson.serialize(tweet))
+        """
 
     def handle_deletion(self, tweet):
         
