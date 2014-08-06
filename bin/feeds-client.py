@@ -68,14 +68,12 @@ class FeedListener(streaming.StreamListener):
         self.queue = queue
 
     def on_data(self, data):
-        #log.notice('caught a feed')
-        feed = data
-        #feed = anyjson.deserialize(data)
-        if feed.has_key('from'):
-            log.notice(u'Queued feed for user {0}/{1}'.format(dict_mget(feed,['from','id']),dict_mget(feed,['from','name'])))
-        """    
         try:
-            
+            feed = data
+            #feed = anyjson.deserialize(data)
+            if feed.has_key('from'):
+                log.notice( u'Queued feed for user {0} / {1}'.format(dict_mget(feed,['from','id']), dict_mget(feed,['from','name'])) )
+            """                
             tweet = anyjson.deserialize(data)
             self.queue.put(anyjson.serialize(tweet))
             if tweet.has_key('delete'):
@@ -88,11 +86,10 @@ class FeedListener(streaming.StreamListener):
 
             else:
                 log.notice(u"Queued tweet: {0}".format(tweet))
-                
+            """
         except Exception as e:
             log.error(u"TweetListener.on_data() caught exception: {0}".format(unicode(e)))
             return False  # Closes connection, stops streaming
-        """
 
     def on_timeout(self):
         log.error(u"TweetListener connection timed out.")
@@ -103,6 +100,7 @@ class FeedListener(streaming.StreamListener):
 class FeedStreamClient(object):
     def __init__(self):
         self.config = tweetsclient.Config().get()
+        """
         consumer_key = self.config.get('tweets-client', 'consumer_key')
         consumer_secret = self.config.get('tweets-client', 'consumer_secret')
         access_token = self.config.get('tweets-client', 'access_token')
@@ -120,6 +118,7 @@ class FeedStreamClient(object):
             log.notice("Authenticated as {user}".format(user=username))
         except tweepy.error.TweepError as e:
             log.error(unicode(e))
+        """
 
     def get_config_default(self, section, key, default = None):
         try:
@@ -169,9 +168,9 @@ class FeedStreamClient(object):
         else:
             raise Exception('Unrecognized stream type: {0}'.format(stream_type))
         """
+        token = self.config.get('tweets-client', 'facebook_token')
         feed_listener = FeedListener(self.beanstalk)
-        facebook_token = 'CAAE72Fovp7YBAAv5gSnUG8JcuVxstXtriZBrwmdGUP4YHuZCA5yZAavdPADEQmFkgWxp2kzFaRMrO9j0pUCiyFu361Yr8koBClNO16ybXaTDogty3u8YqUZAxvSPrzCbfa5QpjZA71qAdTIB9qJBJpuWAZCtTDL2twAHNyzWMHcNGFqJXln79OOo7D3qBA7PbS9KXXdNgZA5H9qyUg4hjwqFhLhfRk99ZA8ZD'
-        stream = streaming.Stream(auth=facebook_token, listener=feed_listener)
+        stream = streaming.Stream(auth=token, listener=feed_listener)
         stream.filter()
 
     def run(self):
