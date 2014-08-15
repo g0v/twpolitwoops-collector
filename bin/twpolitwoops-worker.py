@@ -80,7 +80,7 @@ class DeletedTweetsWorker(object):
 
     def _database_keepalive(self):
         cur = self.database.cursor()
-        cur.execute("""SELECT id FROM tweets LIMIT 1""")
+        cur.execute("""SELECT id FROM feeds LIMIT 1""")
         cur.fetchone()
         cur.close()
         log.info("Executed database connection keepalive query.")
@@ -91,7 +91,7 @@ class DeletedTweetsWorker(object):
 
     def get_users(self):
         cursor = self.database.cursor()
-        q = "SELECT `twitter_id`, `user_name`, `id` FROM `politicians`"
+        q = "SELECT `facebook_id`, `user_name`, `id` FROM `politicians`"
         cursor.execute(q)
         ids = {}
         politicians = {}
@@ -120,8 +120,8 @@ class DeletedTweetsWorker(object):
 
     def handle_feed(self, job_body):
         log.notice(u'handle_feed.')
-        """
         feed = anyjson.deserialize(job_body)
+        #feed = job_body
         if feed.has_key('delete'):
             #if delete feed's user_id in self.users.keys():
             #    self.handle_deletion(feed)
@@ -129,12 +129,12 @@ class DeletedTweetsWorker(object):
         else:
             if feed['from']['id'] in self.users.keys():
                 self.handle_new(feed)
-            
+            else:
+                log.notice(u"found user {0}({1}) isn't in users", feed['from']['name'], feed['from']['id'] )
             #    if self.images and tweet.has_key('entities'):
             #        # Queue the tweet for screenshots and/or image mirroring
             #        log.notice("Queued tweet {0} for entity archiving.", tweet['id'])
             #        self.beanstalk.put(anyjson.serialize(tweet))
-        """
 
     def handle_deletion(self, tweet):
         
@@ -154,10 +154,10 @@ class DeletedTweetsWorker(object):
         pass
 
     def handle_new(self, feed):
-        log.notice("New feed {feed} from user {user_id}/{screen_name}",
+        log.notice(u"New feed {feed} from user {user_id}/{screen_name}",
                     feed=feed.get('id'), #feed id
-                    user_id=feed.get('user',{}).get('id'), #user id
-                    screen_name=feed.get('user',{}).get('screen_name')) #user name
+                    user_id=feed.get('from',{}).get('id'), #user id
+                    screen_name=feed.get('from',{}).get('name')) #user name
         self.handle_possible_rename(feed);
         cursor = self.database.cursor()
         cursor.execute("""SELECT COUNT(*), `deleted` FROM `feeds` WHERE `id` = %s""",(feed['id']))
@@ -169,22 +169,35 @@ class DeletedTweetsWorker(object):
         else:
             was_deleted = False
 
-        #retweeted_id = None
-        #retweeted_content = None
-        #retweeted_user_name = None
+        retweeted_id = None
+        retweeted_content = None
+        retweeted_user_name = None
         #if tweet.has_key('retweeted_status'):
         #    retweeted_id = tweet['retweeted_status']['id']
         #    retweeted_content = replace_highpoints(tweet['retweeted_status']['text'])
         #    retweeted_user_name = tweet['retweeted_status']['user']['screen_name']
 
         if num_previous > 0:
-            cursor.execute(""" UPDATE `tweets` SET """)
+            #cursor.execute(""" UPDATE `tweets` SET """)
             #update feed info, some time is ...edit?
-            log.info("Updated feed {0}", feed.get('id'))
+            log.info( "Updated feed {0}", feed.get('id') )
         else:
-            cursor.execute("""INSERT INTO `tweets`(`id`,`user_name`""")
+            #cursor.execute("""INSERT INTO `feeds`(`id`,`user_name`""")
+            cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `tweet`, retweeted_id, retweeted_content, retweeted_user_name) 
+                        VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                            (feed['id'],
+                            feed['from']['name'],
+                            self.users[feed['from']['id']],
+                            replace_highpoints(feed['message']),
+                            feed['created_time'],
+                            feed['updated_time'],
+                            anyjson.serialize(feed),
+                            retweeted_id,
+                            retweeted_content,
+                            retweeted_user_name) )
+
             #insert new feed into database.
-            log.info("Inserted new feed {0}", feed.get('id'))
+            log.info( "Inserted new feed {0}", feed.get('id') )
 
 
         if was_deleted:
@@ -196,7 +209,7 @@ class DeletedTweetsWorker(object):
         cursor.execute("""REPLACE INTO `deleted_tweets` SELECT * FROM `tweets` WHERE `id` = %s AND `content` IS NOT NULL""" % (tweet_id))
 
     def handle_possible_rename(self, feed):
-        """ check user whether changing name. """
+        """ check user whether change name. """
         feed_user_name = feed['from']['name']
         feed_user_id = feed['from']['id']
         current_user_name = self.politicians[feed_user_id]

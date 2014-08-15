@@ -20,8 +20,14 @@ class Stream(object):
         self.auth = auth
         self.listener = listener
         self.running = False
-        self.timeout = options.get('timeout')
-        self.retry_count = options.get("retry_count")
+        self.client_id = options.get('client_id', None)
+        self.client_secret = options.get('client_secret', None)
+        if self.client_id and self.client_secret:
+            self.expired = 3600
+        else:
+            self.expired = None
+    #self.timeout = options.get('timeout')
+        #self.retry_count = options.get("retry_count")
         # values according to https://dev.twitter.com/docs/streaming-apis/connecting#Reconnecting
         self.retry_time_start = options.get("retry_time", 60)
         #self.retry_420_start = options.get("retry_420", 60.0)
@@ -29,7 +35,7 @@ class Stream(object):
         self.snooze_time_step = options.get("snooze_time", 0.25)
         self.snooze_time_cap = options.get("snooze_time_cap", 16)
         self.buffer_size = options.get("buffer_size",  1500)
-
+    
         #self.api = API()
         #self.session = requests.Session()
         #self.session.headers = options.get("headers") or {}
@@ -49,8 +55,14 @@ class Stream(object):
             # sleep 5mins
                 resp = self.fb_api.request(self.url, args)
                 self.listener.on_connect()
-                logging.error('running, if on_data, retry in ' + `self.retry_time` )
+                #logging.error(u'running, if on_data, retry in ' + `self.retry_time` )
                 self._read_loop(resp['data'])
+                if self.expired == None:
+                    pass
+                elif self.expired >0:
+                    self.expired -= self.retry_time
+                else:
+                    extend_token()
                 time.sleep(self.retry_time)
                 start_time = int( time.time() )
             except Exception as exception:
@@ -97,6 +109,15 @@ class Stream(object):
         self.fb_api = facebook.GraphAPI(access_token = self.auth)
         self.start_time = int( time.time() )
         self._start(async)
+
+    def extend_token(self):
+        try:
+            new_token = self.fb_api.extend_access_token(self.client_id, self.client_secret)
+            self.fb_api.access_token = new_token['access_token']
+            self.expired = int(new_token['expires']) - 86400
+            logging.notice(u'extend_token success.')
+        except Exception as e:
+            logging.debug(u'extend_token error:{exception}',exception=e)
 
     def disconnect(self):
         if self.running is False:

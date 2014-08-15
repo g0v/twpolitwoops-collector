@@ -72,7 +72,7 @@ class FeedListener(streaming.StreamListener):
             feed = data
             #feed = anyjson.deserialize(data)
             if feed.has_key('from'):
-                log.notice( u'Queued feed for user {0} / {1}'.format(dict_mget(feed,['from','id']), dict_mget(feed,['from','name'])) )
+                log.notice( u'Queued feed for user {0} / {1}, update_time: {2}'.format(dict_mget(feed,['from','id']), dict_mget(feed,['from','name']),feed['updated_time']) )
                 self.queue.put(anyjson.serialize(feed))
             """                
             tweet = anyjson.deserialize(data)
@@ -169,9 +169,11 @@ class FeedStreamClient(object):
         else:
             raise Exception('Unrecognized stream type: {0}'.format(stream_type))
         """
-        token = self.config.get('tweets-client', 'facebook_token')
+        access_token = self.config.get('facebook-client', 'facebook_token')
+	client_id = self.config.get('facebook-client','client_id')
+	client_secret = self.config.get('facebook-client','client_secret')
         feed_listener = FeedListener(self.beanstalk)
-        stream = streaming.Stream(auth=token, listener=feed_listener)
+        stream = streaming.Stream(auth=access_token, listener=feed_listener, client_id=client_id, client_secret=client_secret)
         stream.filter()
 
     def run(self):
