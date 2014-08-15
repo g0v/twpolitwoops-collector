@@ -1,4 +1,8 @@
 # fill in Twitter account username and password
+[facebook-client]
+facebook_token=
+client_id=
+client_secret=
 [tweets-client]
 username=
 password=
@@ -6,7 +10,6 @@ consumer_key=
 consumer_secret=
 access_token=
 access_token_secret=
-facebook_token=
 # type can be stream, words, or users
 type=users
 
