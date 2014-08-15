@@ -1,6 +1,12 @@
+import os
 import time
 import facebook
-import logging
+from logbook import Logger
+
+_script_ = (os.path.basename(__file__)
+            if __name__ == "__main__"
+            else __name__)
+logging = Logger(_script_)
 
 API_VERSION = 'v2.0'
 
@@ -21,12 +27,13 @@ class Stream(object):
         self.listener = listener
         self.running = False
         self.client_id = options.get('client_id', None)
-        self.client_secret = options.get('client_secret', None)
+        self.client_secret = options.get("client_secret", None)
+        logging.info(u"client id/secret is: {0}/{1}", self.client_id, self.client_secret)
         if self.client_id and self.client_secret:
             self.expired = 3600
         else:
             self.expired = None
-    #self.timeout = options.get('timeout')
+        #self.timeout = options.get('timeout')
         #self.retry_count = options.get("retry_count")
         # values according to https://dev.twitter.com/docs/streaming-apis/connecting#Reconnecting
         self.retry_time_start = options.get("retry_time", 60)
@@ -46,7 +53,7 @@ class Stream(object):
 
     def _run(self):
         # Authenticate
-        args = { 'since' : self.start_time }
+        args = { 'since' : self.start_time,'limit': 500 }
         resp = None
         exception = None
         while self.running:
@@ -62,7 +69,7 @@ class Stream(object):
                 elif self.expired >0:
                     self.expired -= self.retry_time
                 else:
-                    extend_token()
+                    self.extend_token()
                 time.sleep(self.retry_time)
                 start_time = int( time.time() )
             except Exception as exception:
@@ -102,12 +109,18 @@ class Stream(object):
     def userstream(self,**args):
         pass
 
-    def filter(self,follow=None, async=False):
+    def filter(self,follow=None, async=False, start_time=None):
         if self.running:
             pass  # *** there should raise ERROR like already connected. *** #
         self.url = '/%s/me/home' % API_VERSION
         self.fb_api = facebook.GraphAPI(access_token = self.auth)
-        self.start_time = int( time.time() )
+        if start_time:
+            self.start_time = start_time
+        else:
+            self.start_time = int( time.time() )
+        logging.notice(u"start_time is {0}".format( time.strftime("%Y/%m/%d %H:%M:%S %p",time.localtime(int(start_time)) )))
+        if self.expired:
+            self.extend_token()
         self._start(async)
 
     def extend_token(self):
@@ -115,7 +128,7 @@ class Stream(object):
             new_token = self.fb_api.extend_access_token(self.client_id, self.client_secret)
             self.fb_api.access_token = new_token['access_token']
             self.expired = int(new_token['expires']) - 86400
-            logging.notice(u'extend_token success.')
+            logging.notice(u'extend_token success, expire in {0}'.format(self.expired))
         except Exception as e:
             logging.debug(u'extend_token error:{exception}',exception=e)
 

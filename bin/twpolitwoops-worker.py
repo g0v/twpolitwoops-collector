@@ -158,6 +158,11 @@ class DeletedTweetsWorker(object):
                     feed=feed.get('id'), #feed id
                     user_id=feed.get('from',{}).get('id'), #user id
                     screen_name=feed.get('from',{}).get('name')) #user name
+        if not feed.has_key('message'):
+            log.notice(u"feed keys:{0}",feed.keys())
+            for k in feed.keys():
+                log.notice(u"feed {k} content:{content}",k=k, content=feed[k])
+            pass
         self.handle_possible_rename(feed);
         cursor = self.database.cursor()
         cursor.execute("""SELECT COUNT(*), `deleted` FROM `feeds` WHERE `id` = %s""",(feed['id']))
@@ -187,8 +192,8 @@ class DeletedTweetsWorker(object):
                         VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                             (feed['id'],
                             feed['from']['name'],
-                            self.users[feed['from']['id']],
-                            replace_highpoints(feed['message']),
+                            self.users[feed['from']['id']], 
+                            replace_highpoints(feed['message']) if feed.has_key('message') else feed['story'],
                             feed['created_time'],
                             feed['updated_time'],
                             anyjson.serialize(feed),

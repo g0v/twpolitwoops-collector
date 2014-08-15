@@ -17,7 +17,7 @@ import sys
 import argparse
 import signal
 import ConfigParser
-
+import datetime
 import socket
 # disable buffering
 socket._fileobject.default_bufsize = 0
@@ -170,11 +170,12 @@ class FeedStreamClient(object):
             raise Exception('Unrecognized stream type: {0}'.format(stream_type))
         """
         access_token = self.config.get('facebook-client', 'facebook_token')
-	client_id = self.config.get('facebook-client','client_id')
-	client_secret = self.config.get('facebook-client','client_secret')
+        client_id = self.config.get('facebook-client','client_id')
+        client_secret = self.config.get('facebook-client','client_secret')
         feed_listener = FeedListener(self.beanstalk)
         stream = streaming.Stream(auth=access_token, listener=feed_listener, client_id=client_id, client_secret=client_secret)
-        stream.filter()
+        start_time = datetime.datetime.now() + datetime.timedelta(hours=-1)
+        stream.filter(start_time=start_time.strftime('%s'))
 
     def run(self):
         self.init_beanstalk()
