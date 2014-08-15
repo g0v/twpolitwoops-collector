@@ -29,7 +29,6 @@ import anyjson
 import logbook
 
 # this is for consuming the streaming API
-import tweepy
 import tweetsclient
 import politwoops
 import streaming
