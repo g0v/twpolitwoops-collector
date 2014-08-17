@@ -192,7 +192,7 @@ def main(args):
     log_handler = politwoops.utils.configure_log_handler(_script_, args.loglevel, args.output)
     with logbook.NullHandler():
         with log_handler.applicationbound():
-            log.debug("Starting tweets-client.py")
+            log.debug("Starting feeds-client.py")
             try:
                 app = FeedStreamClient()
                 if args.authtest:

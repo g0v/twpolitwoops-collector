@@ -28,9 +28,7 @@ socket._fileobject.default_bufsize = 0
 import httplib
 httplib.HTTPConnection.debuglevel = 1
 
-import urllib2
-import MySQLdb
-import anyjson
+#import urllib2
 import logbook
 import tweetsclient
 import politwoops
@@ -202,11 +200,8 @@ class DeletedTweetsWorker(object):
                     log.info( u"Updated {0}'s feed {0}", feed.get('from',{}).get('name'), feed.get('id') )
             else:
                 log.notice(u"{0}'s feed hasn't message key.", feed['from']['name'] )
-            #cursor.execute(""" UPDATE `tweets` SET """)
-            #update feed info, some time is ...edit?
             
         else:
-            #cursor.execute("""INSERT INTO `feeds`(`id`,`user_name`""")
             cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `feed`, `feed_type`, url, edited_list) 
                         VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                             (feed.get('id'),
@@ -220,7 +215,6 @@ class DeletedTweetsWorker(object):
                             feed.get('actions')[0].get('link'),
                             "[]") )
 
-            #insert new feed into database.
             log.notice( u"Inserted {1}'s new feed {0}", feed.get('id'), feed.get('from',{}).get('name') )
 
 
@@ -300,6 +294,7 @@ class DeletedTweetsWorker(object):
             msg['To'] = recipient
             smtp.sendmail(sender, recipient, msg.as_string())
         """
+
 def main(args):
     #configuration
     signal.signal(signal.SIGHUP, politwoops.utils.restart_process)
