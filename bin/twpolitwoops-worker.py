@@ -136,7 +136,11 @@ class DeletedTweetsWorker(object):
         #    pass
         #else:
         feed = anyjson.deserialize(job_body)
-        if feed.get('from',{}).get('id') in self.users.keys(): #is a politician
+        if feed.get('refresh',False):
+            self.users, self.politicians = self.get_users()
+            self.normal_users = self.get_normal_users()
+            log.notice(u"Refresh user and politician list from check notice.")
+        elif feed.get('from',{}).get('id') in self.users.keys(): #is a politician
             self.handle_new(feed)
         elif feed.get('from',{}).get('id') in self.normal_users.keys(): #is a normal user
             if not self.normal_users[ feed.get('from',{}).get('id') ]:  #not be ignored.
