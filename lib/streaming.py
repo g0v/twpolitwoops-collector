@@ -53,7 +53,7 @@ class Stream(object):
 
     def _run(self):
         # Authenticate
-        args = { 'since' : self.start_time,'limit': 500 }
+        args = { 'since' : self.start_time,'limit': 50 }
         resp = None
         exception = None
         while self.running:
@@ -72,9 +72,12 @@ class Stream(object):
                     self.extend_token()
                 time.sleep(self.retry_time)
                 start_time = int( time.time() )
-            except Exception as exception:
+            except Exception as e:
                 # any exception is fatal, so kill loop.
-                break
+                logging.notice( u"request error as {0}({1}), retry later.", e.result.get('type'), e.result.get('code') )
+                self.expired -= 2
+                sleep(2)
+                continue
 
         # clean up
         self.running = False

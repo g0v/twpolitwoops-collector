@@ -17,6 +17,7 @@ import anyjson
 import smtplib
 import signal
 import pytz
+import difflib
 from email.mime.text import MIMEText
 from datetime import datetime
 
@@ -135,16 +136,16 @@ class DeletedTweetsWorker(object):
         #    pass
         #else:
         feed = anyjson.deserialize(job_body)
-        if feed['from']['id'] in self.users.keys(): #is a politician
+        if feed.get('from',{}).get('id') in self.users.keys(): #is a politician
             self.handle_new(feed)
-        elif feed['from']['id'] in self.normal_users.keys(): #is a normal user
-            if not self.normal_users[ feed['from']['id'] ]:  #not be ignored.
+        elif feed.get('from',{}).get('id') in self.normal_users.keys(): #is a normal user
+            if not self.normal_users[ feed.get('from',{}).get('id') ]:  #not be ignored.
                 self.handle_tmp(feed)
         else:
             cursor = self.database.cursor()
             cursor.execute("""INSERT INTO normal_users (`user_name`, `facebook_id`) VALUES (%s, %s)""",
-                            (feed['from']['name'], feed['from']['id']))
-            log.notice(u"add new normal user:{0}({1})", feed['from']['name'], feed['from']['id'] )
+                            (feed.get('from',{}).get('name'), feed.get('from',{}).get('id')) )
+            log.notice(u"add new normal user:{0}({1})", feed.get('from',{}).get('name'), feed.get('from',{}).get('id') )
             self.normal_users = self.get_normal_users()
             self.handle_tmp(feed)
 
@@ -171,44 +172,49 @@ class DeletedTweetsWorker(object):
         pass
 
     def handle_new(self, feed):
-        #log.notice(u"New feed from {screen_name}({user_id})",
-        #            user_id=feed.get('from',{}).get('id'), #user id
-        #            screen_name=feed.get('from',{}).get('name')) #user name
-        self.handle_possible_rename(feed);
+        self.handle_possible_rename(feed); #check user whether rename.
         cursor = self.database.cursor()
-        cursor.execute("""SELECT COUNT(*), `deleted` FROM `feeds` WHERE `id` = %s""",(feed['id']))
+        cursor.execute("""SELECT COUNT(*), `deleted`, `content`, `modified`, `edited_list` FROM `feeds` WHERE `id` = %s""",(feed['id']))
         
         info = cursor.fetchone()
         num_previous = info[0]
-        if info[1] is not None:   # is not New
+        if info[1] is not None:
             was_deleted = (int(info[1]) == 1)
         else:
             was_deleted = False
 
-        #retweeted_id = None
-        #retweeted_content = None
-        #retweeted_user_name = None
-        #if tweet.has_key('retweeted_status'):
-        #    retweeted_id = tweet['retweeted_status']['id']
-        #    retweeted_content = replace_highpoints(tweet['retweeted_status']['text'])
-        #    retweeted_user_name = tweet['retweeted_status']['user']['screen_name']
-
-        if num_previous > 0:
+        if num_previous > 0: #feed exist.
+            if feed.has_key('message'):
+                if list( difflib.context_diff(info[2], feed.get('message')) ):
+                    msg = { "message":info[2], "updated_time":info[3] }
+                    edited_list = anyjson.deserialize(info[-1]).append(msg)
+                    cursor.execute("""UPDATE `feeds` SET `user_name`=%s, `politician_id`=%s,`content`=%s, `modified`=%s, `edited_list`=%s WHERE id=%s""",
+                                (feed['from']['name'],
+                                 self.users[feed['from']['id']],
+                                 feed.get('message',None),
+                                 feed.get('updated_time'),
+                                 anyjson.serialize(edited_list),
+                                 feed['id']))
+                    log.info( u"Updated {0}'s feed {0}", feed.get('from',{}).get('name'), feed.get('id') )
+            else:
+                log.notice(u"{0}'s feed hasn't message key.", feed['from']['name'] )
             #cursor.execute(""" UPDATE `tweets` SET """)
             #update feed info, some time is ...edit?
-            log.info( "Updated feed {0}", feed.get('id') )
+            
         else:
             #cursor.execute("""INSERT INTO `feeds`(`id`,`user_name`""")
-            cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `feed`, `feed_type`) 
-                        VALUES(%s, %s, %s, %s, %s, %s, %s, %s )""",
+            cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `feed`, `feed_type`, url, edited_list) 
+                        VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                             (feed.get('id'),
                             feed.get('from',{}).get('name'),
                             self.users[feed['from']['id']], 
-                            feed.get('message'),
+                            feed.get('message',None),
                             feed.get('created_time'),
                             feed.get('updated_time'),
                             anyjson.serialize(feed),
-                            feed.get('type')) )
+                            feed.get('type'),
+                            feed.get('actions')[0].get('link'),
+                            "[]") )
 
             #insert new feed into database.
             log.notice( u"Inserted {1}'s new feed {0}", feed.get('id'), feed.get('from',{}).get('name') )
@@ -216,7 +222,7 @@ class DeletedTweetsWorker(object):
 
         if was_deleted:
             log.warn("feed deleted {0} before it came!", feed.get('id'))
-            self.copy_tweet_to_deleted_table(feed['id'])
+            #self.copy_tweet_to_deleted_table(feed['id'])
 
     def handle_tmp(self, feed):
         cursor = self.database.cursor()
@@ -228,7 +234,7 @@ class DeletedTweetsWorker(object):
                             (feed.get('id'),
                             feed.get('from',{}).get('id'),
                             feed.get('from',{}).get('name'),
-                            feed.get('message'),
+                            feed.get('message',None),
                             feed.get('created_time'),
                             feed.get('updated_time'),
                             anyjson.serialize(feed),
@@ -289,7 +295,7 @@ class DeletedTweetsWorker(object):
             msg['From'] = sender
             msg['To'] = recipient
             smtp.sendmail(sender, recipient, msg.as_string())
-            """
+        """
 def main(args):
     #configuration
     signal.signal(signal.SIGHUP, politwoops.utils.restart_process)
