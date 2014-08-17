@@ -33,7 +33,6 @@ import facebook
 import logbook
 import tweetsclient
 import politwoops
-replace_highpoints = politwoops.utils.replace_highpoints
 
 _script_ = (os.path.basename(__file__)
             if __name__ == "__main__"
@@ -110,6 +109,7 @@ class FeedsChecker(object):
             if self.check_users():
                 self.check_tmp_feeds()
             self.check_feeds()
+            time.sleep(300)
 
     def check_users(self):
         politicians, users = self.get_users()
@@ -175,7 +175,7 @@ def main(args):
 
                 with politwoops.utils.Heart() as heart:
                     politwoops.utils.start_watchdog_thread(heart)
-                    app = DeletedTweetsWorker(heart, args.images)
+                    app = FeedsChecker(heart)
                     if args.restart:
                         return politwoops.utils.run_with_restart(app.run)
                     else:
