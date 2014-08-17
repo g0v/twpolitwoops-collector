@@ -143,14 +143,15 @@ class FeedsChecker(object):
     def check_feeds(self):
         cursor = self.database.cursor()
         cursor.execute("SELECT `id`, `url`, FROM `feeds` WHERE `deleted` = 0")
-        for data in cursor.fetchall():
+        feeds = cursor.fetchall()
+        for data in feeds:
             try:
                 # feed exist, put into for work.
                 feed = self.fb_api.get_object(data[0])
                 self.beanstalk.put(anyjson.serialize(feed))
             except Exception as e:
                 # can't access feed by api, try through url.
-                cursor.execute("""UPDATE `feed` SET `unaccessable`=1 WHERE id = %s""" % (data[0]))
+                cursor.execute("""UPDATE `feed` SET `unaccessable`=1 WHERE id = %s""",data[0])
                 html = requests.get(data[1])
                 isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
                 if "Page Not Found" in isdelete: #is deleted.
@@ -159,7 +160,7 @@ class FeedsChecker(object):
     def handle_deletion(self, feed_id):
         cursor = self.database.cursor()
         cursor.execute("""UPDATE `feeds` SET `deleted`=1 WHERE id = %s""" % (feed_id))
-        cursor.execute("""REPLACE INTO `deleted_feeds` SELECT * FROM `feeds` WHERE id=%s AND `content` IS NOT NULL""" % (feed_id))
+        cursor.execute("""REPLACE INTO `deleted_feeds` SELECT * FROM `feeds` WHERE id=%s AND `content` IS NOT NULL""", feed_id)
         log.warn(u"capture a deleted feed!!")
 
 
