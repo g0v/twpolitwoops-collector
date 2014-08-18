@@ -32,6 +32,28 @@ In the [aws] section, add your access key, secret access key, bucket name, and a
 
 
 ## Running
+#### The part of Facebook feeds:
+
+
+Run feeds-client.py to start streaming items from Facebook into the beanstalk queue. Append the lib directory to the PYTHONPATH, either persistently or as part of the command:
+
+```bash
+PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/feeds-client.py
+```
+
+Then run twpolitwoops-worker.py to start pulling the feeds out of beanstalk and loading them into MySQL:
+
+```bash
+PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/twpolitwoops-worker.py
+```
+
+Finally, run feeds-checker.py to check feeds status, it would loading deleted feeds into MySQL, put edited feeds into beanstalk queue, and update unaccessible feeds in MySQL.
+
+```bash
+PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/feeds-checker.py
+```
+
+#### The part of Twitter tweets:
 
 Run tweets-client.py to start streaming items from Twitter into the beanstalk queue. Append the lib directory to the PYTHONPATH, either persistently or as part of the command:
 
