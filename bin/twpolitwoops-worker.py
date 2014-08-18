@@ -212,6 +212,11 @@ class DeletedTweetsWorker(object):
                 log.info(u"{0}'s feed hasn't message key.", feed['from']['name'] )
             
         else:
+            url=""
+            if feed.has_key('actions'):
+                url = feed.get('actions')[0].get('link')
+            else:
+                url = "is a activity."
             cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `feed`, `feed_type`, url, edited_list) 
                         VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                             (feed.get('id'),
@@ -222,7 +227,7 @@ class DeletedTweetsWorker(object):
                             feed.get('updated_time').replace('+0000',''),
                             anyjson.serialize(feed),
                             feed.get('type'),
-                            feed.get('actions')[0].get('link'),
+                            url,
                             "[]") )
 
             log.notice( u"Inserted {1}'s new feed {0}", feed.get('id'), feed.get('from',{}).get('name') )

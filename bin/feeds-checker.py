@@ -157,10 +157,11 @@ class FeedsChecker(object):
             except Exception as e:
                 # can't access feed by api, try through url.
                 cursor.execute("""UPDATE `feeds` SET `unaccessable`=1 WHERE id = %s""",data[0])
-                html = requests.get(data[1])
-                isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
-                if "Page Not Found" or u"找不到網頁" in isdelete: #is deleted.
-                    self.handle_deletion(data[0])
+                if "a activity." not in data[1]:
+                    html = requests.get(data[1])
+                    isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
+                    if "Page Not Found" or u"找不到網頁" in isdelete: #is deleted.
+                        self.handle_deletion(data[0])
 
     def handle_deletion(self, feed_id):
         cursor = self.database.cursor()
