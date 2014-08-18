@@ -62,7 +62,7 @@ class DeletedTweetsWorker(object):
             use_unicode=True
         )
         self.database.autocommit(True) # needed if you're using InnoDB
-        self.database.cursor().execute('SET NAMES UTF8')
+        self.database.cursor().execute('SET NAMES UTF8MB4')
 
     def init_beanstalk(self):
         tweets_tube = self.config.get('beanstalk', 'tweets_tube')
@@ -134,10 +134,15 @@ class DeletedTweetsWorker(object):
         #    pass
         #else:
         feed = anyjson.deserialize(job_body)
-        if feed.get('refresh',False):
-            self.users, self.politicians = self.get_users()
-            self.normal_users = self.get_normal_users()
-            log.notice(u"Refresh user and politician list from check notice.")
+        if isinstance(feed, unicode):
+            feed = anyjson.deserialize(feed)
+            print feed.get('from',{}).get('name')
+
+        if feed.has_key('refresh'):
+            if feed.get('refresh'):
+                self.users, self.politicians = self.get_users()
+                self.normal_users = self.get_normal_users()
+                log.notice(u"Refresh user and politician list from check notice.")
         elif feed.get('from',{}).get('id') in self.users.keys(): #is a politician
             self.handle_new(feed)
         elif feed.get('from',{}).get('id') in self.normal_users.keys(): #is a normal user
@@ -188,18 +193,23 @@ class DeletedTweetsWorker(object):
         if num_previous > 0: #feed exist.
             if feed.has_key('message'):
                 if list( difflib.context_diff(info[2], feed.get('message')) ):
-                    msg = { "message":info[2], "updated_time":info[3] }
-                    edited_list = anyjson.deserialize(info[-1]).append(msg)
+                    msg = { "message":info[2], "updated_time":str(info[3]) }
+                    if "null" in str(info[-1]):
+                        edited_list = list()
+                        edited_list.append(msg)
+                    else:
+                        edited_list = anyjson.deserialize(info[-1])
+                        edited_list.append(msg)
                     cursor.execute("""UPDATE `feeds` SET `user_name`=%s, `politician_id`=%s,`content`=%s, `modified`=%s, `edited_list`=%s WHERE id=%s""",
                                 (feed['from']['name'],
                                  self.users[feed['from']['id']],
-                                 feed.get('message',None),
-                                 feed.get('updated_time'),
+                                 feed['message'],
+                                 feed.get('updated_time').replace('+0000',''),
                                  anyjson.serialize(edited_list),
                                  feed['id']))
-                    log.info( u"Updated {0}'s feed {0}", feed.get('from',{}).get('name'), feed.get('id') )
+                    log.notice( u"Updated {0}'s feed {0}", feed.get('from',{}).get('name'), feed.get('id') )
             else:
-                log.notice(u"{0}'s feed hasn't message key.", feed['from']['name'] )
+                log.info(u"{0}'s feed hasn't message key.", feed['from']['name'] )
             
         else:
             cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `feed`, `feed_type`, url, edited_list) 
@@ -207,9 +217,9 @@ class DeletedTweetsWorker(object):
                             (feed.get('id'),
                             feed.get('from',{}).get('name'),
                             self.users[feed['from']['id']], 
-                            feed.get('message',None),
-                            feed.get('created_time'),
-                            feed.get('updated_time'),
+                            feed.get('message',''),
+                            feed.get('created_time').replace('+0000',''),
+                            feed.get('updated_time').replace('+0000',''),
                             anyjson.serialize(feed),
                             feed.get('type'),
                             feed.get('actions')[0].get('link'),
@@ -232,9 +242,9 @@ class DeletedTweetsWorker(object):
                             (feed.get('id'),
                             feed.get('from',{}).get('id'),
                             feed.get('from',{}).get('name'),
-                            feed.get('message',None),
-                            feed.get('created_time'),
-                            feed.get('updated_time'),
+                            feed.get('message',''),
+                            feed.get('created_time').replace('+0000',''),
+                            feed.get('updated_time').replace('+0000',''),
                             anyjson.serialize(feed),
                             feed.get('type') ) )
             log.info(u"normal user {0}'s feed {1} insert into tmp.", feed.get('from',{}).get('name'), feed.get('id'))
