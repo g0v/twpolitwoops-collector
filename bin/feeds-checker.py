@@ -107,9 +107,11 @@ class FeedsChecker(object):
             if self.heart.beat():
                 self._database_keepalive()
             if self.check_users():
+                time.sleep(10) # sleep a I/O tick.
                 self.check_tmp_feeds()
+            time.sleep(10)
             self.check_feeds()
-            time.sleep(299)
+            time.sleep(200)
 
     def check_users(self):
         politicians, users = self.get_users()
@@ -124,7 +126,6 @@ class FeedsChecker(object):
         cursor.execute("SELECT `facebook_id`, `user_name` FROM `normal_users` WHERE `ignored` = -1")
         for info in cursor.fetchall():
             cursor.execute("INSERT INTO `politicians` (`facebook_id`, `user_name`) VALUES (%s, %s)", (info[0], info[1]))
-            time.sleep(0.2)
             cursor.execute("DELETE FROM `normal_users` WHERE `facebook_id` = %s", info[0])
             log.notice(u"Let user {0} into politicians.", info[1])
             refresh['refresh'] = True
@@ -141,7 +142,7 @@ class FeedsChecker(object):
         # insert new politican's feed from tmp_feeds.
         for info in cursor.fetchall():
             if info[0] not in users:
-                self.beanstalk.put(anyjson.serialize(info[1]))
+                self.beanstalk.put(info[1].encode('utf8'))
                 cursor.execute("""DELETE FROM `tmp_feeds` WHERE `id` = %s""", info[2])
                 log.notice(u"Queued {0}'s tmp_feed.",info[0])                
 
@@ -160,13 +161,13 @@ class FeedsChecker(object):
                 if "a activity." not in data[1]:
                     html = requests.get(data[1])
                     isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
+                    time.sleep(1) #sleep a I/O tick.
                     if "Page Not Found" or u"找不到網頁" in isdelete: #is deleted.
                         self.handle_deletion(data[0])
 
     def handle_deletion(self, feed_id):
         cursor = self.database.cursor()
         cursor.execute("""UPDATE `feeds` SET `deleted`=1 WHERE id = %s""", feed_id)
-        time.sleep(0.2)
         cursor.execute("""REPLACE INTO `deleted_feeds` SELECT * FROM `feeds` WHERE id = %s AND `content` IS NOT NULL""", feed_id)
         log.warn(u"capture a deleted feed!!")
 
