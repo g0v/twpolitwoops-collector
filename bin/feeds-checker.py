@@ -162,7 +162,7 @@ class FeedsChecker(object):
                     html = requests.get(data[1])
                     isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
                     time.sleep(1) #sleep a I/O tick.
-                    if "Page Not Found" or u"找不到網頁" in isdelete: #is deleted.
+                    if u"找不到網頁" in isdelete: #is deleted.
                         self.handle_deletion(data[0])
 
     def handle_deletion(self, feed_id):
