@@ -174,7 +174,7 @@ class FeedStreamClient(object):
         feed_listener = FeedListener(self.beanstalk)
         stream = streaming.Stream(auth=access_token, listener=feed_listener, client_id=client_id, client_secret=client_secret)
         start_time = datetime.datetime.now() + datetime.timedelta(minutes=-15)
-	stream.filter(start_time=start_time.strftime('%s'))
+        stream.filter(start_time=start_time.strftime('%s'))
 
     def run(self):
         self.init_beanstalk()
