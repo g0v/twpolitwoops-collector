@@ -36,7 +36,7 @@ class Stream(object):
         #self.timeout = options.get('timeout')
         #self.retry_count = options.get("retry_count")
         # values according to https://dev.twitter.com/docs/streaming-apis/connecting#Reconnecting
-        self.retry_time_start = options.get("retry_time", 60)
+        self.retry_time_start = options.get("retry_time", 90)
         #self.retry_420_start = options.get("retry_420", 60.0)
         self.retry_time_cap = options.get("retry_time_cap", 320.0)
         self.snooze_time_step = options.get("snooze_time", 0.25)

@@ -148,8 +148,9 @@ class FeedsChecker(object):
 
     def check_feeds(self):
         cursor = self.database.cursor()
-        cursor.execute("SELECT `id`, `url` FROM `feeds` WHERE `deleted` = 0")
+        cursor.execute("SELECT `id`, `url` FROM `feeds` WHERE `deleted` = 0 and created> %s", datetime.today().strftime("%Y/%m/%d"))
         feeds = cursor.fetchall()
+        #log.notice(u"counts:{0}", len(feeds))
         for data in feeds:
             try:
                 # feed exist, put into for work.
@@ -162,7 +163,10 @@ class FeedsChecker(object):
                     html = requests.get(data[1])
                     isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
                     time.sleep(1) #sleep a I/O tick.
-                    if u"找不到網頁" in isdelete: #is deleted.
+                    bol = True if u"找不到網頁" in isdelete or u"Page Not Found" else False
+                    log.notice(u"is delete:{0}", bol)
+                    if bol: #is deleted.
+                        log.notice(u"to handle_deletion")
                         self.handle_deletion(data[0])
 
     def handle_deletion(self, feed_id):
