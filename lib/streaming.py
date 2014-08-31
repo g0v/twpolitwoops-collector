@@ -74,9 +74,9 @@ class Stream(object):
                 start_time = int( time.time() )
             except Exception as e:
                 # any exception is fatal, so kill loop.
-                logging.notice( u"request error as {0}({1}), retry later.", e.result.get('type'), e.result.get('code') )
-                self.expired -= 2
-                time.sleep(2)
+                logging.notice( u"request error as {0}, retry later.", e )
+                self.expired -= 30
+                time.sleep(30)
                 continue
 
         # clean up
