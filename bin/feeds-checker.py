@@ -148,7 +148,7 @@ class FeedsChecker(object):
 
     def check_feeds(self):
         cursor = self.database.cursor()
-        cursor.execute("SELECT `id`, `url` FROM `feeds` WHERE `deleted` = 0 and created> %s", datetime.today().strftime("%Y/%m/%d"))
+        cursor.execute("SELECT `id`, `url`, `feed` FROM `feeds` WHERE `deleted` = 0 and created> %s", datetime.today().strftime("%Y/%m/%d"))
         feeds = cursor.fetchall()
         #log.notice(u"counts:{0}", len(feeds))
         for data in feeds:
@@ -159,7 +159,11 @@ class FeedsChecker(object):
             except Exception as e:
                 # can't access feed by api, try through url.
                 cursor.execute("""UPDATE `feeds` SET `unaccessable`=1 WHERE id = %s""",data[0])
-                if "a activity." not in data[1]:
+                raw_feed = anyjson.deserialize(data[2])
+                if raw_feed.has_key('story'):
+                    isactivity = True if u"likes a" in raw_feed['story'] or u"like a" in raw_feed['story']  else False
+                    log.notice(u"raw_story:{0}, isactivity:{1}, raw_url:{2}", raw_feed['story'], isactivity, data[1])
+                if not isactivity:
                     html = requests.get(data[1])
                     isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
                     time.sleep(1) #sleep a I/O tick.
