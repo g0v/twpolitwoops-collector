@@ -8,7 +8,6 @@ Created by lanfon72 a.k.a lanf0n, 貓橘毛 on 2014-08-18.
 
 import sys
 import os
-import re
 import time
 #import mimetypes
 import argparse
@@ -33,6 +32,7 @@ import facebook
 import logbook
 import tweetsclient
 import politwoops
+from bs4 import BeautifulSoup
 
 _script_ = (os.path.basename(__file__)
             if __name__ == "__main__"
@@ -162,19 +162,16 @@ class FeedsChecker(object):
                 # can't access feed by api, try through url.
                 cursor.execute("""UPDATE `feeds` SET `unaccessable`=1 WHERE id = %s""",data[0])
                 raw_feed = anyjson.deserialize(data[2])
-                if raw_feed.has_key('story'):
-                    isactivity = True if u"likes a" in raw_feed['story'] or u"like a" in raw_feed['story'] or u"commented on" in raw_feed['story'] else False
-                    log.notice(u"raw_story:{0}, isactivity:{1}, raw_url:{2}", raw_feed['story'], isactivity, data[1])
-                else:
-                    isactivity = False
+                isactivity = True if u"likes a" in raw_feed.get('story','') or u"like a" in raw_feed.get('story','') or u"commented on" in raw_feed.get('story','') else False
+                log.notice(u"raw_story:{0}, isactivity:{1}, raw_url:{2}", raw_feed.get('story',''), isactivity, data[1])
                 if not isactivity:
-                    html = requests.get(data[1])
-                    isdelete = re.findall(u'id="pageTitle">(.*)',html.text)
-                    time.sleep(0.5) #sleep a I/O tick.
-                    bol = True if u"找不到網頁" in isdelete or u"Page Not Found" in isdelete else False
-                    log.notice(u"is delete:{0}, url:{1}, raw:{2}", bol, data[1], isdelete)
-                    if bol: #is deleted.
-                        self.handle_deletion(data[0])
+                    html = requests.get(data[1], allow_redirects=True)
+                    if html.status_code == requests.codes.ok:
+                        title = BeautifulSoup(html.text).title.string
+                        time.sleep(0.5) #sleep a I/O tick.
+                        log.notice(u"Title:{0}, url:{1}", title, data[1])
+                        if u"找不到網頁" in title or u"Page Not Found" in title: # be deleted.
+                            self.handle_deletion(data[0])
 
     def handle_deletion(self, feed_id):
         cursor = self.database.cursor()

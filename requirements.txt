@@ -10,3 +10,4 @@ requests==0.14.0
 argparse==1.2.1
 facebook-sdk==0.4.0
 pytz
+beautifulsoup4
