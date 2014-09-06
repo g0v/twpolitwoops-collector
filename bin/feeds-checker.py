@@ -166,7 +166,8 @@ class FeedsChecker(object):
                 log.notice(u"raw_story:{0}, isactivity:{1}, raw_url:{2}", raw_feed.get('story',''), isactivity, data[1])
                 if not isactivity:
                     html = requests.get(data[1], allow_redirects=True)
-                    if html.status_code == requests.codes.ok:
+                    log.notice("status code:{0}", html.status_code)
+                    if html.status_code == requests.codes.not_found:
                         title = BeautifulSoup(html.text).title.string
                         time.sleep(0.5) #sleep a I/O tick.
                         log.notice(u"Title:{0}, url:{1}", title, data[1])
