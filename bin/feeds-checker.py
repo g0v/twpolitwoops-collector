@@ -162,7 +162,7 @@ class FeedsChecker(object):
                 # can't access feed by api, try through url.
                 cursor.execute("""UPDATE `feeds` SET `unaccessable`=1 WHERE id = %s""",data[0])
                 raw_feed = anyjson.deserialize(data[2])
-                isactivity = True if u"likes a" in raw_feed.get('story','') or u"like a" in raw_feed.get('story','') or u"commented on" in raw_feed.get('story','') else False
+                isactivity = True if u"likes a" in raw_feed.get('story','') or u"like a" in raw_feed.get('story','') or u"commented on" in raw_feed.get('story','') or u"a activity" in data[1] else False
                 log.notice(u"raw_story:{0}, isactivity:{1}, raw_url:{2}", raw_feed.get('story',''), isactivity, data[1])
                 if not isactivity:
                     html = requests.get(data[1], allow_redirects=True)
