@@ -265,7 +265,7 @@ class DeletedTweetsWorker(object):
         current_user_name = self.politicians[feed_user_id]
         if current_user_name != feed_user_name:
             self.politicians[feed_user_id] = feed_user_name
-            cursor = self.database.coursor()
+            cursor = self.database.cursor()
             cursor.execute("""UPDATE `politicians` SET `user_name` = %s WHERE `id` = %s""", (feed_user_name, self.users[feed_user_id]))
 
     def send_alert(self, username, created, text):
