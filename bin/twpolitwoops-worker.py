@@ -215,8 +215,12 @@ class DeletedTweetsWorker(object):
             url=""
             if feed.has_key('actions'):
                 url = feed.get('actions')[0].get('link')
+                if self.images:
+                    log.notice("Queued feed {0} for entity archiving.", feed['id'])
+                    self.beanstalk.put(anyjson.serialize(feed))
             else:
                 url = "is a activity."
+
             cursor.execute("""INSERT INTO `feeds` (`id`, `user_name`, `politician_id`, `content`, `created`, `modified`, `feed`, `feed_type`, url, edited_list) 
                         VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                             (feed.get('id'),
