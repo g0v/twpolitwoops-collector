@@ -178,7 +178,13 @@ class FeedsChecker(object):
         cursor = self.database.cursor()
         cursor.execute("""UPDATE `feeds` SET `deleted`=1 WHERE id = %s""", feed_id)
         cursor.execute("""REPLACE INTO `deleted_feeds` SELECT * FROM `feeds` WHERE id = %s AND `content` IS NOT NULL""", feed_id)
-        self.fb_api.put_wall_post("capture a deleted feed from {0}".format(feed_id))
+        cursor.execute("""SELECT `user_name`, `url`, `content` FROM `deleted_feeds` WHERE  `id` = %s""", feed_id)
+        del_feed = cursor.fetchone()
+        link = "https://s3-ap-southeast-1.amazonaws.com/twpolitwoops/feed-imgs/" + feed_id + "-0.png"
+        account = del_feed[1].split('posts')[0]
+        msg = u"吃到 {user_name} 刪除的貼文惹~ 潮爽德~~ \n帳號:{acc}\n原網址:{url}\n原文:{content}"
+        msg = msg.format(user_name=del_feed[0], url=del_feed[1], content=del_feed[2], acc=account)
+        self.fb_api.put_wall_post(msg.encode('utf-8'), {'link':link})
         log.warn(u"capture a deleted feed!!")
 
 

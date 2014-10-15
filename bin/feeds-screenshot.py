@@ -36,7 +36,6 @@ _script_ = (os.path.basename(__file__)
             else __name__)
 log = logbook.Logger(_script_)
 
-
 class PhantomJSTimeout(Exception):
     def __init__(self, cmd, process, stdout, stderr, *args, **kwargs):
         msg = u"phantomjs timeout for pid {process.pid}; cmd: {cmd!r} stdout: {stdout!r}, stderr: {stderr!r}".format(process=process, cmd=cmd, stdout=stdout, stderr=stderr)
@@ -227,6 +226,8 @@ class FeedUrlWorker(object):
         urls = [feed.get('actions')[0].get('link')]
         urls += [feed.get('link',"")]
         for entity_index, url in enumerate(urls):
+            if url == "":
+                continue
             response = requests.head(url, allow_redirects=True, timeout=15)
             log.info("HEAD {status_code} {url} {bytes}",
                       status_code=response.status_code,
@@ -255,7 +256,7 @@ class FeedUrlWorker(object):
                                                 index=entity_index)
 
         with NamedTemporaryFile(mode='wb', prefix='twoops', suffix='.png', delete=True) as fil:
-            cmd = ["phantomjs", "js/rasterize.js", url, fil.name]
+            cmd = ["phantomjs", "--ssl-protocol=any", "js/rasterize.js", url, fil.name]
             (stdout, stderr) = run_subprocess_safely(cmd,
                                                      timeout=30,
                                                      timeout_signal=15)
