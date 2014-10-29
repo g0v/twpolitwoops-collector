@@ -17,7 +17,7 @@ import anyjson
 import signal
 import pytz
 #from email.mime.text import MIMEText
-from datetime import datetime
+import datetime
 
 import socket
 # disable buffering
@@ -127,6 +127,8 @@ class FeedsChecker(object):
         for info in cursor.fetchall():
             cursor.execute("INSERT INTO `politicians` (`facebook_id`, `user_name`) VALUES (%s, %s)", (info[0], info[1]))
             cursor.execute("DELETE FROM `normal_users` WHERE `facebook_id` = %s", info[0])
+            _msg = u"歡迎新的飼料提供者 {usr} \nFB連結:http://www.facebook.com/{f_id}".format(usr=info[0],f_id=info[1])
+            self.fb_api.put_wall_post(msg.encode('utf-8'))
             log.notice(u"Let user {0} into politicians.", info[1])
             refresh['refresh'] = True
         # notice worker should refresh user list.
@@ -148,7 +150,9 @@ class FeedsChecker(object):
 
     def check_feeds(self):
         cursor = self.database.cursor()
-        cursor.execute("SELECT `id`, `url`, `feed` FROM `feeds` WHERE `deleted` = 0 and created>%s", datetime.today().strftime("%Y/%m/%d"))
+        chk_day = datetime.datetime.today() - datetime.timedelta(days=2)
+        #cursor.execute("SELECT `id`, `url`, `feed` FROM `feeds` WHERE `deleted` =0 and politician_id=50")
+        cursor.execute("SELECT `id`, `url`, `feed` FROM `feeds` WHERE `deleted` = 0 and created>%s", chk_day.strftime("%Y/%m/%d"))
         feeds = cursor.fetchall()
         log.notice(u"counts:{0}", len(feeds))
         for data in feeds:

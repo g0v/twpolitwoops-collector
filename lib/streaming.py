@@ -53,7 +53,7 @@ class Stream(object):
 
     def _run(self):
         # Authenticate
-        args = { 'since' : self.start_time }
+        args = { 'since' : self.start_time, 'limit':100 }
         resp = None
         exception = None
         while self.running:
