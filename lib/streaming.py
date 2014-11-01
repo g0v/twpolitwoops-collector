@@ -1,6 +1,7 @@
 import os
 import time
 import facebook
+import tweetsclient
 from logbook import Logger
 
 _script_ = (os.path.basename(__file__)
@@ -26,6 +27,7 @@ class Stream(object):
         self.auth = auth
         self.listener = listener
         self.running = False
+        self.config = tweetsclient.Config().get()
         self.client_id = options.get('client_id', None)
         self.client_secret = options.get("client_secret", None)
         logging.info(u"client id/secret is: {0}/{1}", self.client_id, self.client_secret)
@@ -131,6 +133,8 @@ class Stream(object):
             new_token = self.fb_api.extend_access_token(self.client_id, self.client_secret)
             self.fb_api.access_token = new_token['access_token']
             self.expired = int(new_token['expires']) - 86400
+            self.config.set('facebook-client', 'facebook_token', self.fb_api.access_token)
+            self.config.write(open('./conf/tweets-client.ini', 'w'))
             logging.notice(u'extend_token success, expire in {0}'.format(self.expired))
         except Exception as e:
             logging.debug(u'extend_token error:{exception}',exception=e)
