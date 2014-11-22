@@ -127,7 +127,7 @@ class FeedsChecker(object):
         for info in cursor.fetchall():
             cursor.execute("INSERT INTO `politicians` (`facebook_id`, `user_name`) VALUES (%s, %s)", (info[0], info[1]))
             cursor.execute("DELETE FROM `normal_users` WHERE `facebook_id` = %s", info[0])
-            _msg = u"歡迎新的飼料提供者 {usr} \nFB連結:http://www.facebook.com/{f_id}".format(usr=info[0],f_id=info[1])
+            _msg = u"歡迎新的飼料提供者 {usr} \nFB連結:http://www.facebook.com/{f_id}".format(usr=info[1],f_id=info[0])
             self.fb_api.put_wall_post(_msg.encode('utf-8'))
             log.notice(u"Let user {0} into politicians.", info[1])
             refresh['refresh'] = True
