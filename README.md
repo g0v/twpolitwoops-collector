@@ -47,6 +47,11 @@ Then run twpolitwoops-worker.py to start pulling the feeds out of beanstalk and 
 PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/twpolitwoops-worker.py
 ```
 
+if you ran twpolitwoops-worker.py with the images option turned on, run feeds-screenshot.py to grab screenshots of webpages and mirror images linked in feeds.
+
+```bash
+PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/feeds-screenshot.py
+```
 Finally, run feeds-checker.py to check feeds status, it would loading deleted feeds into MySQL, put edited feeds into beanstalk queue, and update unaccessible feeds in MySQL.
 
 ```bash
