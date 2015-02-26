@@ -12,7 +12,10 @@ Install pip if you don't already have it then run:
 ```bash
 pip install -r requirements.txt
 ```
-
+If your phantomjs can't recognize fonts, try to install:
+```bash
+apt-get install xfonts-wqy
+```
 
 ## Edit config file
 
@@ -44,7 +47,7 @@ PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/feeds-client.py
 Then run twpolitwoops-worker.py to start pulling the feeds out of beanstalk and loading them into MySQL:
 
 ```bash
-PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/twpolitwoops-worker.py
+PYTHONPATH=$PYTHONPATH:`pwd`/lib ./bin/twpolitwoops-worker.py --images
 ```
 
 if you ran twpolitwoops-worker.py with the images option turned on, run feeds-screenshot.py to grab screenshots of webpages and mirror images linked in feeds.
